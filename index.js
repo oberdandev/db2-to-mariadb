@@ -93,10 +93,10 @@ app.post('/test-mariadb-connection', async (req,res) => {
 
 })
 
-app.get('/tables-db2', async (req, res) => {
+app.get('/tables-db2/:schema', async (req, res) => {
   let tabelas = []; 
 
-  const schema = req.body.schema || 'DB2INST1';
+  const schema = req.params.schema || 'DB2INST1';
   const listTables = await db2.getListTable(db2Connection, schema);
   
   for(let table of listTables) {
