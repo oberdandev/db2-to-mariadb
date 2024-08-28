@@ -73,6 +73,10 @@ export async function transferDB2toMariadb(db2Conn, db2Params, mariadbConn, sche
 
   })
 
+  for(const tableName in tables){
+    db2.getTableContent(db2Conn, db2Params.schema, )
+  }
+
   } catch (error) {
     console.log(error)
     return {error: error};

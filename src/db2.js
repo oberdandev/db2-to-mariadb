@@ -101,10 +101,28 @@ export const db2 = {
     try{
       const q =  `SELECT REFTABNAME FROM SYSCAT.REFERENCES WHERE TABNAME = upper('${table}') AND TABSCHEMA = upper('${schema}')`
       const references = await connection.query(q);
+
       return references;
-      console.log(references)
     } catch (e) {
       console.log(e)
+    }
+  },
+  getTableContent: async (connection, schema, table) => {
+    try {
+      const q = await connection.query(`SELECT * FROM ${schema}.${table}`);
+      return q;
+    } catch (error) {
+      return {error: error.message}
+    }
+  },
+  getTableReferencieds: async(connection, schema, table) => {
+    try {
+      const qReferencieds = `SELECT TABNAME 
+        FROM SYSCAT.REFERENCES WHERE REFTABNAME = upper('${table}') AND REFTABSCHEMA = upper('${schema}')`
+      const referencieds = await connection.query(qReferencieds);
+      return referencieds;  
+    } catch (error) {
+      return {error: error.message}
     }
   }
 };

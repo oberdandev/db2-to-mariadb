@@ -101,7 +101,8 @@ app.get('/tables-db2', async (req, res) => {
   
   for(let table of listTables) {
     let references = await db2.getTableReferences(db2Connection, schema, table);
-    tabelas.push({table: table, references: references});
+    let referencieds = await db2.getTableReferencieds(db2Connection, schema, table);
+    tabelas.push({table: table, references: references, referencieds: referencieds});
   }
 
   return res.json(tabelas);
