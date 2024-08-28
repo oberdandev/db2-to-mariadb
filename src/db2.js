@@ -1,6 +1,7 @@
 import ibmdb from 'ibm_db';
 import mariadb from 'mariadb';
-//import { mariadbConn, createTablesOnMariaDB } from './mariadb.js';
+import { maria } from './mariadb.js';
+import { transferTables } from './transferTables.js';
 
 let db2Conn;
 const query = {
@@ -130,7 +131,7 @@ async function tryConnectionToDb2(database, host, port, user, password, schema) 
     }
 
     
-    console.log(tableObj['BAIRRO'])
+    console.log(tableObj)
     
     
   
@@ -142,7 +143,7 @@ async function tryConnectionToDb2(database, host, port, user, password, schema) 
 
 
 
-//tryConnectionToDb2('db2', '138.197.98.40', 50000, 'DB2INST1', 'root', 'DB2INST1');
+tryConnectionToDb2('db2', '138.197.98.40', 50000, 'DB2INST1', 'root', 'DB2INST1');
 
 
 
