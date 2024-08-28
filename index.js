@@ -44,7 +44,7 @@ app.post('/test-db2-connection', async (req,res) => {
   try {
     let promise = await db2.testConnection({database, host, port, user, password});
     if(promise) {
-        db2Connection = db2.setConnection({database, host, port, user, password});
+        db2Connection = await db2.setConnection({database, host, port, user, password});
         res.status(200).send('conexão realizada com sucesso');
       } else {
         res.status(500).send('erro ao realizar conexão');
@@ -71,6 +71,13 @@ app.post('/test-mariadb-connection', async (req,res) => {
     res.status(500).send('erro ao realizar conexão')
   }
 
+})
+
+app.get('/tables-db2', async (req, res) => {
+  const schema = req.body.schema || 'DB2INST1';
+  console.log(db2Connection)
+  const listTables = await db2.getListTable(db2Connection, schema);
+  return res.json(listTables);
 })
 
 

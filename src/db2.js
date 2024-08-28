@@ -3,7 +3,6 @@ import mariadb from 'mariadb';
 import { maria } from './mariadb.js';
 import { transferTables } from './transferTables.js';
 
-
 const query = {
   getTablesName: (schema) =>  `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = upper('${schema}')`,
   getColumns: (schema) => `SELECT COLNAME, TYPENAME, LENGTH, COLNO,  "SCALE", "DEFAULT", "NULLS" FROM SYSCAT.COLUMNS WHERE TABSCHEMA = upper('${schema}')`,
@@ -74,35 +73,20 @@ export const db2 = {
       return new Promise((resolve, reject) => reject(error));
     }
   },
-  getListTable: async (connectionParams) => {
+  getListTable: async (connection, schema) => {
     try {
-      const { database, host, port, user, password, schema } = connectionParams;
-      const cn = `DATABASE=${database};HOSTNAME=${host};PORT=${port};PROTOCOL=TCPIP;UID=${user};PWD=${password};`;
       let tableNames = []
-      const tableObj = {}
-  
-      let conn = await ibmdb.open(cn);
-      await conn.query(query.getTablesName(schema))
+      await connection.query(query.getTablesName(schema))
         .then(t => t.map(t => tableNames.push(t.TABNAME)))
         .catch((e) => {console.log(e);});
       
       console.log(tableNames)
-  
-      for(let table of tableNames) {
-        let q = query.getColumnsByTable(schema, table)
-        console.log(`fazendo query da`, table)
-        await conn.query(q)
-          .then(r => {
-            tableObj[table] = r; 
-          })
-          .catch(e => console.log(e))
-      }
-  
-      return tableObj;
+      return tableNames;
     } catch (error) {
-      return new Promise((resolve, reject) => reject(error));
+      console.log(error)
+      return []
     }
-  }
+  },
 };
 
 
@@ -142,8 +126,6 @@ async function tryConnectionToDb2(database, host, port, user, password, schema) 
     }
 
 }
-
-
 
 //tryConnectionToDb2('db2', '138.197.98.40', 50000, 'DB2INST1', 'root', 'DB2INST1');
 
