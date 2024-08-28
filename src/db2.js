@@ -1,7 +1,7 @@
 import ibmdb from 'ibm_db';
 import mariadb from 'mariadb';
 import { maria } from './mariadb.js';
-import { transferTables } from './transferTables.js';
+
 
 const query = {
   getTablesName: (schema) =>  `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = upper('${schema}')`,
@@ -47,12 +47,12 @@ export const db2 = {
     const connection = await ibmdb.open(cn);
     return connection;
   },
-  getTables: async (connection) => {
+  getTables: async (connection, schema) => {
     try {
       let tableNames = []
       const tableObj = {}
   
-      await connection.query(query.getTablesName())
+      await connection.query(query.getTablesName(schema))
         .then(t => t.map(t => tableNames.push(t.TABNAME)))
         .catch((e) => {console.log(e);});
       
@@ -70,7 +70,7 @@ export const db2 = {
   
       return tableObj;
     } catch (error) {
-      return new Promise((resolve, reject) => reject(error));
+      console.log(error);
     }
   },
   getListTable: async (connection, schema) => {
@@ -87,6 +87,15 @@ export const db2 = {
       return []
     }
   },
+  getSchemas: async(connection) => {
+    try {
+      const schema = await connection.query(`SELECT SCHEMANAME FROM SYSCAT.SCHEMATA WHERE OWNERTYPE = 'U'`)
+      return schema;
+    } catch (error) {
+      console.log('errro ao buscar schemas do db2: ', error)
+      return {error: error.message}
+    }
+  }
 };
 
 
@@ -116,9 +125,6 @@ async function tryConnectionToDb2(database, host, port, user, password, schema) 
         .catch(e => console.log(e))
     }
 
-    
-    console.log(tableObj)
-    
     
   
     }catch(e) {

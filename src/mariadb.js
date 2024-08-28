@@ -4,9 +4,10 @@ export let mariadbConn;
 
 export const maria = {
   testConnection: async (connectionParams) => {
-    const { database, host, user, password } = connectionParams;
+    const { database, host, user, password, port } = connectionParams;
     const pool = mariadb.createPool({
       host,
+      port,
       user,
       password,
       database,
