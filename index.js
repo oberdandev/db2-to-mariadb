@@ -29,7 +29,9 @@ app.set('views', './views');
 
 
 app.use(cors({
-  origin: '*'
+    origin: '*',
+    methods: 'GET, POST, PUT, DELETE, PATCH',
+    allowedHeaders: 'Content-Type, Authorization',
 }));
 app.use(express.static(path.resolve('./public')));
 app.use(express.urlencoded({ extended: true }));
