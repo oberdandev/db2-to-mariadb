@@ -1,5 +1,7 @@
 import mariadb from 'mariadb';
 
+export let mariadbConn;
+
 export const maria = {
   testConnection: async (connectionParams) => {
     const { database, host, user, password } = connectionParams;
@@ -12,7 +14,6 @@ export const maria = {
     })
 
     let mariadbConn;
-
     try {
       mariadbConn = await pool.getConnection();
       console.log("Conexão bem-sucedida!");
@@ -36,7 +37,16 @@ export const maria = {
       console.log(e)
       return null;
     }
+  },
+  setConnection: async(connectionParams) => {
+    const pool = mariadb.createPool({
+      ...connectionParams,
+      connectionLimit: 10
+    })
+    let mariadbConn = pool.getConnection();
+    return mariadbConn;
   }
+
 }
 
 
