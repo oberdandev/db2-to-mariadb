@@ -44,7 +44,7 @@ export const maria = {
       ...connectionParams,
       connectionLimit: 10
     })
-    let mariadbConn = pool.getConnection();
+    let mariadbConn = await pool.getConnection();
     return mariadbConn;
   }
 
@@ -65,6 +65,7 @@ async function tryConnectionMariaDB(database, host, user, password){
   try {
     mariadbConn = await pool.getConnection();
     console.log("Conexão bem-sucedida!");
+    return mariadbConn;
   } catch (err) {
     console.error("Erro na conexão:", err);
   } finally {

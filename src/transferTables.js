@@ -2,12 +2,10 @@ import {maria} from './mariadb.js'
 import { db2 } from './db2.js';
 
 export async function transferDB2toMariadb(db2Conn, db2Params, mariadbConn, schemamariadb){
-  const schema_db2 =  'DB2INST1';
+  try {
+    const schema_db2 =  'DB2INST1';
   const tables = await db2.getTables(db2Conn, schema_db2);
   let sqlQueries = []
-
-  console.log(tables)
-
 /*   console.log(tabelasDB2)
   const tablesName = Object.keys(tabelasDB2); */
 
@@ -63,20 +61,16 @@ export async function transferDB2toMariadb(db2Conn, db2Params, mariadbConn, sche
       sqlQueries.push(sql);
     }
   }
-
+  
   sqlQueries.forEach(async (sql) => {
-    await mariadbConn.query(sql, schemamariadb);
+    const querie = await mariadbConn.query(sql, schemamariadb);
+
   })
 
-/*   tablesName.map(table => {
-    const columns = tabelasDB2[table];
-    const q = `CREATE TABLE IF NOT EXISTS ${table} (
-      ${columns.COLNAME} 
-    )`;
-
-  }); */
-
-  
+  } catch (error) {
+    console.log(error)
+    return {error: error};
+  }
 };
 
 export function transferMariadbToDB2(db2Conn, mariadbConn, tableColumns){
