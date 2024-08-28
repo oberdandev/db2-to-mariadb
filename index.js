@@ -27,7 +27,10 @@ app.engine('hbs', engine({
 app.set('view engine', 'hbs');
 app.set('views', './views');
 
-app.use(cors())
+
+app.use(cors({
+  origin: '*'
+}));
 app.use(express.static(path.resolve('./public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -54,7 +57,7 @@ app.post('/test-db2-connection', async (req,res) => {
         db2Connection = await db2.setConnection({database, host, port, user, password});
         db2Params = {database, host, port, user, password};
         console.log(db2Params)
-        await transferDB2toMariadb(db2Connection, db2Params);
+        await transferDB2toMariadb(db2Connection, db2Params, mariadbConnection, mariadbParams);
         res.status(200).send('conexão realizada com sucesso');
       } else {
         res.status(500).send('erro ao realizar conexão');
@@ -71,10 +74,11 @@ app.post('/test-mariadb-connection', async (req,res) => {
     const { 'mariadb-host': host, 'mariadb-user': user, 'mariadb-password':password, 'mariadb-database': database, 'mariadb-port': port } = req.body;
 
     mariadbParams = {database, host, port, user, password};
+  
 
     const promise = await maria.testConnection({database, host, user, password, port});
     if(promise) {
-      mariadbConnection = maria.setConnection({database, host, user, password, port});
+      mariadbConnection = await maria.setConnection({database, host, user, password, port});
       console.log(mariadbConnection);
       res.send('conexão realizada com sucesso');
     } else {
