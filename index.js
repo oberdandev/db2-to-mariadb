@@ -60,5 +60,21 @@ app.post('/test-db2-connection', async (req,res) => {
 
 });
 
+app.post('/test-mariadb-connection', async (req,res) => {
+  try {
+    const { 'mariadb-host': host, 'mariadb-user': user, 'mariadb-password':password, 'mariadb-database': database } = req.body;
+    const promise = await maria.testConnection({database, host, user, password});
+    if(promise) {
+      res.send('conexão realizada com sucesso');
+    } else {
+      res.status(500).send('erro ao realizar conexão');
+    }
+  } catch (error) {
+    console.log('erro ao realizar conexão com mariadb: ', error);
+    res.status(500).send('erro ao realizar conexão')
+  }
+
+})
+
 app.listen(port, ()=> console.log('app listening on port ', port));
 
