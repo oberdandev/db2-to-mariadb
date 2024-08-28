@@ -96,7 +96,17 @@ export const db2 = {
       return {error: error.message}
     }
   },
-  getColumnsPrimaryKey: async(connection, schema, table) => {}
+  getColumnsPrimaryKey: async(connection, schema, table) => {},
+  getTableReferences: async(connection, schema, table) => {
+    try{
+      const q =  `SELECT REFTABNAME FROM SYSCAT.REFERENCES WHERE TABNAME = upper('${table}') AND TABSCHEMA = upper('${schema}')`
+      const references = await connection.query(q);
+      return references;
+      console.log(references)
+    } catch (e) {
+      console.log(e)
+    }
+  }
 };
 
 

@@ -94,9 +94,17 @@ app.post('/test-mariadb-connection', async (req,res) => {
 })
 
 app.get('/tables-db2', async (req, res) => {
+  let tabelas = []; 
+
   const schema = req.body.schema || 'DB2INST1';
   const listTables = await db2.getListTable(db2Connection, schema);
-  return res.json(listTables);
+  
+  for(let table of listTables) {
+    let references = await db2.getTableReferences(db2Connection, schema, table);
+    tabelas.push({table: table, references: references});
+  }
+
+  return res.json(tabelas);
 })
 
 app.get('/searchSchemas', (req,res) => {

@@ -40,7 +40,6 @@ export async function transferDB2toMariadb(db2Conn, db2Params, mariadbConn, sche
             columnDefinition += column.TYPENAME; // fallback, no caso de um tipo não mapeado
         }
 
-        // Adicionar DEFAULT, se existir
         if (column.DEFAULT !== null) {
           columnDefinition += ` DEFAULT ${column.DEFAULT}`;
         }
@@ -78,6 +77,8 @@ export async function transferDB2toMariadb(db2Conn, db2Params, mariadbConn, sche
     console.log(error)
     return {error: error};
   }
+
+  
 };
 
 export function transferMariadbToDB2(db2Conn, mariadbConn, tableColumns){
