@@ -1,0 +1,22 @@
+{
+  "name": "handlebars-db2-to-mariadb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-handlebars": "^8.0.1",
+    "ibm_db": "^3.2.4",
+    "mariadb": "^3.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
