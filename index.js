@@ -2,11 +2,14 @@ import express from 'express';
 import { engine } from 'express-handlebars';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import cors from 'cors';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import { db2 } from './src/db2.js';
 import { maria } from './src/mariadb.js'	
+import { transferDB2toMariadb } from './src/transferTables.js';
 
 let db2Connection;
 let mariadbConnection;
@@ -22,8 +25,10 @@ app.engine('hbs', engine({
 app.set('view engine', 'hbs');
 app.set('views', './views');
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors())
+app.use(express.static(path.resolve('./public')));
 app.use(express.urlencoded({ extended: true }));
+
 
 
 app.get('/', (req, res) => {
@@ -45,6 +50,7 @@ app.post('/test-db2-connection', async (req,res) => {
     let promise = await db2.testConnection({database, host, port, user, password});
     if(promise) {
         db2Connection = await db2.setConnection({database, host, port, user, password});
+        await transferDB2toMariadb(db2Connection, 'DB2INST1');
         res.status(200).send('conexão realizada com sucesso');
       } else {
         res.status(500).send('erro ao realizar conexão');
@@ -58,10 +64,11 @@ app.post('/test-db2-connection', async (req,res) => {
 
 app.post('/test-mariadb-connection', async (req,res) => {
   try {
-    const { 'mariadb-host': host, 'mariadb-user': user, 'mariadb-password':password, 'mariadb-database': database } = req.body;
-    const promise = await maria.testConnection({database, host, user, password});
+    const { 'mariadb-host': host, 'mariadb-user': user, 'mariadb-password':password, 'mariadb-database': database, 'mariadb-port': port } = req.body;
+
+    const promise = await maria.testConnection({database, host, user, password, port});
     if(promise) {
-      mariadbConnection = maria.setConnection({database, host, user, password});
+      mariadbConnection = maria.setConnection({database, host, user, password, port});
       res.send('conexão realizada com sucesso');
     } else {
       res.status(500).send('erro ao realizar conexão');
@@ -75,11 +82,18 @@ app.post('/test-mariadb-connection', async (req,res) => {
 
 app.get('/tables-db2', async (req, res) => {
   const schema = req.body.schema || 'DB2INST1';
-  console.log(db2Connection)
   const listTables = await db2.getListTable(db2Connection, schema);
   return res.json(listTables);
 })
 
 
+app.get('/transfer', async (req, res) => {
+  const tableColumns = await db2.getTables(db2Connection);
+  res.render('transfer', {tableColumns});
+})
+
+
+
 app.listen(port, ()=> console.log('app listening on port ', port));
+
 
