@@ -87,6 +87,15 @@ export const db2 = {
       return []
     }
   },
+  getSchemas: async(connection) => {
+    try {
+      const schema = await connection.query(`SELECT SCHEMANAME FROM SYSCAT.SCHEMATA WHERE OWNERTYPE = 'U'`)
+      return schema;
+    } catch (error) {
+      console.log('errro ao buscar schemas do db2: ', error)
+      return {error: error.message}
+    }
+  }
 };
 
 
