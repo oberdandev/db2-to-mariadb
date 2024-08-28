@@ -3,7 +3,7 @@ import mariadb from 'mariadb';
 import { maria } from './mariadb.js';
 import { transferTables } from './transferTables.js';
 
-let db2Conn;
+
 const query = {
   getTablesName: (schema) =>  `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = upper('${schema}')`,
   getColumns: (schema) => `SELECT COLNAME, TYPENAME, LENGTH, COLNO,  "SCALE", "DEFAULT", "NULLS" FROM SYSCAT.COLUMNS WHERE TABSCHEMA = upper('${schema}')`,
@@ -33,7 +33,6 @@ export const db2 = {
         if(err) {
           reject(err);
         } else {
-          db2Conn = conn;
           resolve(true);
         }
       });
@@ -43,15 +42,18 @@ export const db2 = {
    }
     
   },
-  getTables: async (connectionParams) => {
+  setConnection: async (connectionParams) => {
+    const { database, host, port, user, password } = connectionParams;
+    const cn = `DATABASE=${database};HOSTNAME=${host};PORT=${port};PROTOCOL=TCPIP;UID=${user};PWD=${password};`;
+    const connection = await ibmdb.open(cn);
+    return connection;
+  },
+  getTables: async (connection) => {
     try {
-      const { database, host, port, user, password, schema } = connectionParams;
-      const cn = `DATABASE=${database};HOSTNAME=${host};PORT=${port};PROTOCOL=TCPIP;UID=${user};PWD=${password};`;
       let tableNames = []
       const tableObj = {}
   
-      let conn = await ibmdb.open(cn);
-      await conn.query(query.getTablesName(schema))
+      await connection.query(query.getTablesName())
         .then(t => t.map(t => tableNames.push(t.TABNAME)))
         .catch((e) => {console.log(e);});
       
@@ -60,7 +62,7 @@ export const db2 = {
       for(let table of tableNames) {
         let q = query.getColumnsByTable(schema, table)
         console.log(`fazendo query da`, table)
-        await conn.query(q)
+        await connection.query(q)
           .then(r => {
             tableObj[table] = r; 
           })
@@ -143,7 +145,7 @@ async function tryConnectionToDb2(database, host, port, user, password, schema) 
 
 
 
-tryConnectionToDb2('db2', '138.197.98.40', 50000, 'DB2INST1', 'root', 'DB2INST1');
+//tryConnectionToDb2('db2', '138.197.98.40', 50000, 'DB2INST1', 'root', 'DB2INST1');
 
 
 
