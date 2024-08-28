@@ -1,7 +1,9 @@
 import {maria} from './mariadb.js'
 import { db2 } from './db2.js';
 
+
 export async function transferDB2toMariadb(db2Conn, db2Params, mariadbConn, schemamariadb){
+  const stackErrs = [];
   try {
     const schema_db2 =  'DB2INST1';
   const tables = await db2.getTables(db2Conn, schema_db2);
@@ -61,9 +63,14 @@ export async function transferDB2toMariadb(db2Conn, db2Params, mariadbConn, sche
       sqlQueries.push(sql);
     }
   }
-  
+
   sqlQueries.forEach(async (sql) => {
-    const querie = await mariadbConn.query(sql, schemamariadb);
+    try{
+      const querie = await mariadbConn.query(sql, schemamariadb);
+    }catch(e){
+      stackErrs.push({sql: e});
+      console.log('erro na tabela:', e)
+    }
 
   })
 

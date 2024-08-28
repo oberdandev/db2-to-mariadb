@@ -95,7 +95,8 @@ export const db2 = {
       console.log('errro ao buscar schemas do db2: ', error)
       return {error: error.message}
     }
-  }
+  },
+  getColumnsPrimaryKey: async(connection, schema, table) => {}
 };
 
 
