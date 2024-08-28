@@ -42,7 +42,64 @@ export const db2 = {
    }
     
   },
-
+  getTables: async (connectionParams) => {
+    try {
+      const { database, host, port, user, password, schema } = connectionParams;
+      const cn = `DATABASE=${database};HOSTNAME=${host};PORT=${port};PROTOCOL=TCPIP;UID=${user};PWD=${password};`;
+      let tableNames = []
+      const tableObj = {}
+  
+      let conn = await ibmdb.open(cn);
+      await conn.query(query.getTablesName(schema))
+        .then(t => t.map(t => tableNames.push(t.TABNAME)))
+        .catch((e) => {console.log(e);});
+      
+      console.log(tableNames)
+  
+      for(let table of tableNames) {
+        let q = query.getColumnsByTable(schema, table)
+        console.log(`fazendo query da`, table)
+        await conn.query(q)
+          .then(r => {
+            tableObj[table] = r; 
+          })
+          .catch(e => console.log(e))
+      }
+  
+      return tableObj;
+    } catch (error) {
+      return new Promise((resolve, reject) => reject(error));
+    }
+  },
+  getListTable: async (connectionParams) => {
+    try {
+      const { database, host, port, user, password, schema } = connectionParams;
+      const cn = `DATABASE=${database};HOSTNAME=${host};PORT=${port};PROTOCOL=TCPIP;UID=${user};PWD=${password};`;
+      let tableNames = []
+      const tableObj = {}
+  
+      let conn = await ibmdb.open(cn);
+      await conn.query(query.getTablesName(schema))
+        .then(t => t.map(t => tableNames.push(t.TABNAME)))
+        .catch((e) => {console.log(e);});
+      
+      console.log(tableNames)
+  
+      for(let table of tableNames) {
+        let q = query.getColumnsByTable(schema, table)
+        console.log(`fazendo query da`, table)
+        await conn.query(q)
+          .then(r => {
+            tableObj[table] = r; 
+          })
+          .catch(e => console.log(e))
+      }
+  
+      return tableObj;
+    } catch (error) {
+      return new Promise((resolve, reject) => reject(error));
+    }
+  }
 };
 
 
