@@ -58,8 +58,6 @@ app.post('/test-db2-connection', async (req,res) => {
   console.log('req body', req.body);
   const { 'db2-host':  hostname, 'db2-port': port, 'db2-user': uuid, 'db2-password':pwd, 'db2-database': database } = req.body;
 
-  console.log({database, hostname, port, uuid, pwd});
-  console.log(req.body);
   DB2 = new DatabaseDB2({database, hostname, port, uuid, pwd});
 
   try {
@@ -134,7 +132,6 @@ app.get('/searchSchemas/', (req,res) => {
 
 app.post('/migrate', async (req, res) => {
   try{
-    console.log('body trasnfer: ', req.body);
     const {srcConn, srcSchema, destConn, 
       destSchema, arrTables, migrateData} = req.body;
     
@@ -154,9 +151,6 @@ app.post('/migrate', async (req, res) => {
   }catch(e){
     return res.status(500).send({error: e});
   }
-
-
-
 })
 
 app.get('/db2-schema', async(req,res) => {

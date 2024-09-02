@@ -142,6 +142,24 @@ export class DatabaseDB2 {
     }
   }
 
+  async getPrimaryKeys(schema, table){
+    try{
+      const response = await this.query(query.getColumnsPrimaryKey(schema, table));
+      return response;
+    }catch(e){
+      console.log(e)
+    }
+  }
+
+  async getForeignKeys(table, column){
+    try{
+      const response = await this.query(query.getColumnsForeignKey(schema, table));
+      return response;
+    }catch(e){
+      console.log(e)
+    }
+  }
+
 }
 
 export const db2 = {

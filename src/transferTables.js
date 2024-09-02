@@ -68,26 +68,28 @@ export async function migrateTables({srcConn, srcSchema, srcName, destConn, dest
       }
     })));
 
+   if(migrateData){
+      const limit2 = pLimit(3)
+      await Promise.all(
+        arrTables.map(tableName =>
+          limit2(async () => {
+            const data = await srcConn.getTableData(tableName, srcSchema);
+            const dataColumns = tables[tableName].map(column => column.COLNAME);
+            const insertQuery = `INSERT INTO ${tableName} (${dataColumns.join(',')})
+              VALUES (${dataColumns.map(() => '?').join(',')})`;
     
-    for(tableName of arrTables){
-      const data = await srcConn 
-    }
-    const bairroName = 'BAIRRO';
-    const data = await srcConn.getTableData('BAIRRO', srcSchema);
-    const dataColumns = tables['BAIRRO'].map(column => column.COLNAME);
-    console.log('DATA => ', data)
-    console.log('dataColumns =>', dataColumns)
-
-    const insertQuery = `INSERT INTO ${bairroName} (${dataColumns.map((colname, index) => {
-      return index === dataColumns.length - 1 ? colname : colname + ',';
-    }).join('')})
-      VALUES (${dataColumns.map(() => '?').join(',')})
-    `
-    for(const item of data){
-      const arrData = dataColumns.map(column => item[column]);
-      console.log('arrData: => ', arrData)
-      await destConn.query(insertQuery, arrData);
-    }
+            await Promise.all(
+              data.map(item =>
+                limit2(async () => {
+                  const arrData = dataColumns.map(column => item[column]);
+                  await destConn.query(insertQuery, arrData);
+                })
+              )
+            );
+          })
+        )
+      );   
+    } 
     
   }catch(e){
     console.trace(e)
