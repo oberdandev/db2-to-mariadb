@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 import { db2, DatabaseDB2 } from './src/db2.js';
 import { maria } from './src/mariadb.js'	
-import { migrateTables, transferDB2toMariadb } from './src/transferTables.js';
+import { migrateTables } from './src/transferTables.js';
 import { DatabaseMariadb} from './src/mariadb.js';
 
 let DB2;
@@ -161,12 +161,20 @@ app.post('/migrate', async (req, res) => {
 
 app.get('/db2-schema', async(req,res) => {
   try {
-    const response = await db2.getSchemas(db2Connection);
+    const response = await DB2.getSchemas();
     return res.send(response);
   } catch (error) {
     res.send('Erro ao buscar os schemas: ', error);
   }
 })
+
+app.get('/mariadb-schema'), async(req,res) => {
+  try{
+    const response = await Mariadb.getSchemas()
+  }catch(e){
+    res.status(500).send('Erro ao buscar os schemas: ', error)
+  }
+}
 
 app.listen(port, ()=> console.log('app listening on port ', port));
 

@@ -10,6 +10,19 @@
       return this.config;
     }
 
+    getSchemas() {
+      try {
+        const q = `SELECT SCHEMA_NAME
+        FROM information_schema.SCHEMATA
+        WHERE SCHEMA_NAME NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys');`
+        const response = this.query(q);
+        const schemaName = response.map(schema => {SCHEMANAME: schema})
+        return schemaName;
+      } catch (error) {
+        throw new Error('Error ao buscar os esquemas do mariadb: ', error)  
+      }
+    }
+
     setConfig(config) {
       console.log('mariadb.js - 14: setando configurações para a database Mariadb');
       this.config = config;

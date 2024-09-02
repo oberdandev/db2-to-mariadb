@@ -58,7 +58,7 @@ export class DatabaseDB2 {
     }
   }
 
-  async query(sql) {
+  async query(sql, params = []) {
     if (!this.config || !this.connectionString) {
       throw new Error("Configuração não definida para o banco de dados db2.");
     }
@@ -66,7 +66,7 @@ export class DatabaseDB2 {
     let connection;
     try {
       connection = await ibmdb.open(this.connectionString);
-      const result = await connection.query(sql);
+      const result = await connection.query(sql, params);
 
       return result;
     } catch (err) {
