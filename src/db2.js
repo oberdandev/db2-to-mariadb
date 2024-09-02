@@ -1,7 +1,7 @@
 import ibmdb from 'ibm_db';
 import mariadb from 'mariadb';
 import { maria } from './mariadb.js';
-
+import pLimit from 'p-limit';
 
 const query = {
   getTablesName: (schema) =>  `SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = upper('${schema}')`,
@@ -19,6 +19,129 @@ const query = {
   getColumnsProcedure: (schema, table) => `SELECT TEXT FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = upper('${schema}') AND PROCNAME = upper('${table}')`,
   getColumnsFunction: (schema, table) => `SELECT TEXT FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA = upper('${schema}') AND FUNCNAME = upper('${table}')`,
   getColumnsTrigger: (schema, table) => `SELECT TEXT FROM SYSCAT.TRIGGERS WHERE TRIGSCHEMA = upper('${schema}') AND TRIGNAME = upper('${table}')`,
+}
+
+export class DatabaseDB2 {
+  constructor(config) {
+    this.config = config;
+    this.connectionString = `DATABASE=${config.database};HOSTNAME=${config.hostname};PORT=${config.port};PROTOCOL=TCPIP;UID=${config.uuid};PWD=${config.pwd};`;
+    this.schemas = [];
+  };
+
+  setConfig(config) {
+    this.config = config;
+  }
+
+  getSchemas(){
+    return this.schemas;
+  }
+
+  getConfig(config){
+    return this.config;
+  }
+
+  async testConnection () {
+    if(!this.config) {
+      throw new Error('Database configuration not set');
+    }
+
+    let connection;
+    try {
+      connection = await ibmdb.open(this.connectionString);
+      const schemasNames = await connection.query(`SELECT SCHEMANAME FROM SYSCAT.SCHEMATA WHERE OWNERTYPE = 'U'`)
+      this.schemas = schemasNames;
+      return 'Connection successful!';
+    } catch (error) {
+      throw new Error('Connection failed: ' + error);
+    } finally {
+      if(connection) connection.close();
+    }
+  }
+
+  async query(sql) {
+    if (!this.config || !this.connectionString) {
+      throw new Error("Configuração não definida para o banco de dados db2.");
+    }
+
+    let connection;
+    try {
+      connection = await ibmdb.open(this.connectionString);
+      const result = await connection.query(sql);
+
+      return result;
+    } catch (err) {
+      throw err;
+    } finally {
+      if (connection) connection.close();
+    }
+  }
+
+  async getTablesNameList(schema) {
+    try {
+      const res = await this.query(query.getTablesName(schema));
+      return res;
+    } catch (error) {
+      throw new Error('Could not get tables: ' + error.message);
+    }
+  }
+
+  async getTables(schema) {
+    try{
+      const tableObj = {}
+
+      const res = await this.query(query.getTablesName(schema))
+      const tableNames = res.map(table => table.TABNAME);
+
+      //##IMPORTANTE -> Limita as conexões paralelas para não ter erro do driver
+     // Falha de segmentação (imagem do núcleo gravada)
+      const limit = pLimit(5);
+
+      const promises = tableNames.map(table =>  limit(async () => {
+        const q = query.getColumnsByTable(schema, table);
+        const columns = await this.query(q);
+        tableObj[table] = columns;
+      }));
+
+      await Promise.all(promises);
+
+      return tableObj;
+    }catch(e){
+      throw new Error('Could not get tables: ' + e.message);
+    }
+  }
+
+  async getTableData(table, schema) {
+    try {
+      const q = `SELECT * FROM ${schema}.${table}`;
+      const data = await this.query(q);
+      return data;
+    } catch (error) {
+      throw new Error(`Não foi possível pegar os dados da tabela: ${table} no schema: ${schema}` + error.message);
+    }
+  }
+  
+  async getTableReferencieds (schema, table){
+    try {
+      const qReferencieds = `SELECT TABNAME 
+        FROM SYSCAT.REFERENCES WHERE REFTABNAME = upper('${table}') AND REFTABSCHEMA = upper('${schema}')`
+      const referencieds = await this.query(qReferencieds);
+      return referencieds;  
+    } catch (error) {
+      return {error: error.message}
+    }
+  }
+
+  async getTableReferences(schema, table){
+    try{
+      const q =  `SELECT REFTABNAME FROM SYSCAT.REFERENCES WHERE TABNAME = upper('${table}') AND TABSCHEMA = upper('${schema}')`
+      const references = await this.query(q);
+
+      return references;
+    } catch (e) {
+      return {error: e.message}
+    }
+  }
+
 }
 
 export const db2 = {
@@ -127,42 +250,19 @@ export const db2 = {
   }
 };
 
+const dbDb2conn = new DatabaseDB2({
+  database: 'db2',
+  hostname: '138.197.98.40',
+  port: 50000,
+  uuid: 'DB2INST1',
+  pwd: 'root',
+});
 
-const connectionString = "DATABASE=db2;HOSTNAME=138.197.98.40;PORT=50000;PROTOCOL=TCPIP;UID=DB2INST1;PWD=root;";
-
-async function tryConnectionToDb2(database, host, port, user, password, schema) {
-    const cn = `DATABASE=${database};HOSTNAME=${host};PORT=${port};PROTOCOL=TCPIP;UID=${user};PWD=${password};`;
-
-    let tableNames = []
-    const tableObj = {}
-
-    try{
-      let conn = await ibmdb.open(cn);
-      await conn.query(`SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = upper('${schema}')`)
-        .then(t => t.map(t => tableNames.push(t.TABNAME)))
-        .catch((e) => {console.log(e);});
-      
-    console.log(tableNames)
-
-    for(let table of tableNames) {
-      let q = query.getColumnsByTable(schema, table)
-      console.log(`fazendo query da`, table)
-      await conn.query(q)
-        .then(r => {
-          tableObj[table] = r; 
-        })
-        .catch(e => console.log(e))
-    }
-
-    
-  
-    }catch(e) {
-       console.log(e)
-    }
-
+async function tF() {
+  await dbDb2conn.testConnection();
+  await dbDb2conn.getTables('DB2INST1');
+  await dbDb2conn.getTablesNameList('DB2INST1');
+  //const bairros =  await dbDb2conn.getTableData('BAIRRO', 'DB2INST1');
 }
-
-//tryConnectionToDb2('db2', '138.197.98.40', 50000, 'DB2INST1', 'root', 'DB2INST1');
-
 
 

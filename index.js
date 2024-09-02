@@ -3,13 +3,18 @@ import { engine } from 'express-handlebars';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
+import pLimit from 'p-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import { db2 } from './src/db2.js';
+import { db2, DatabaseDB2 } from './src/db2.js';
 import { maria } from './src/mariadb.js'	
-import { transferDB2toMariadb } from './src/transferTables.js';
+import { migrateTables, transferDB2toMariadb } from './src/transferTables.js';
+import { DatabaseMariadb} from './src/mariadb.js';
+
+let DB2;
+let Mariadb;
 
 let db2Connection;
 let mariadbConnection;
@@ -49,71 +54,109 @@ app.get('/connect', (req,res) => {
 
 app.get('/transfer', (req,res) => {})
 
-
 app.post('/test-db2-connection', async (req,res) => {
   console.log('req body', req.body);
-  const { 'db2-host': host, 'db2-port': port, 'db2-user': user, 'db2-password':password, 'db2-database': database } = req.body;
+  const { 'db2-host':  hostname, 'db2-port': port, 'db2-user': uuid, 'db2-password':pwd, 'db2-database': database } = req.body;
+
+  console.log({database, hostname, port, uuid, pwd});
+  console.log(req.body);
+  DB2 = new DatabaseDB2({database, hostname, port, uuid, pwd});
+
   try {
-    let promise = await db2.testConnection({database, host, port, user, password});
+    let promise = await DB2.testConnection();
     if(promise) {
-        db2Connection = await db2.setConnection({database, host, port, user, password});
-        db2Params = {database, host, port, user, password};
-        console.log(db2Params)
-        await transferDB2toMariadb(db2Connection, db2Params, mariadbConnection, mariadbParams);
         res.status(200).send('conexão realizada com sucesso');
-      } else {
-        res.status(500).send('erro ao realizar conexão');
       }
   } catch (error) { 
     console.log(error)
-    res.status(500).send(`erro ao realizar conexão: ${error} `)
+    res.status(500).send({
+      message: 'Erro ao conectar ao banco de dados',
+      error: error.message,
+      code: error.code
+    })
   }
-
 });
 
 app.post('/test-mariadb-connection', async (req,res) => {
   try {
     const { 'mariadb-host': host, 'mariadb-user': user, 'mariadb-password':password, 'mariadb-database': database, 'mariadb-port': port } = req.body;
+    console.log(req.body)
 
-    mariadbParams = {database, host, port, user, password};
-  
+    Mariadb = new DatabaseMariadb({host, user, password, database, port}); 
+    //await DatabaseMariadb.setConfig({host, database, port, user, password});
+    await Mariadb.testConnection();
 
-    const promise = await maria.testConnection({database, host, user, password, port});
-    if(promise) {
-      mariadbConnection = await maria.setConnection({database, host, user, password, port});
-      console.log(mariadbConnection);
-      res.send('conexão realizada com sucesso');
-    } else {
-      res.status(500).send('erro ao realizar conexão');
-    }
+    return res.status(200).send('Conexão realizada com sucesso');
+
   } catch (error) {
-    console.log('erro ao realizar conexão com mariadb: ', error);
-    res.status(500).send(`erro ao realizar conexão com mariadb: ${error}`)
+    return error;
   }
-
-})
+}
+)
 
 app.get('/tables-db2/:schema', async (req, res) => {
-  let tabelas = []; 
+  try {
+    let tabelas = []; 
 
-  const schema = req.params.schema || 'DB2INST1';
-  const listTables = await db2.getListTable(db2Connection, schema);
-  
-  for(let table of listTables) {
-    let references = await db2.getTableReferences(db2Connection, schema, table);
-    let referencieds = await db2.getTableReferencieds(db2Connection, schema, table);
-    tabelas.push({table: table, references: references, referencieds: referencieds});
+    const schema = req.params.schema || 'DB2INST1';
+    const listTables = await DB2.getTablesNameList(schema);
+
+    const limit = pLimit(4);
+
+    tabelas = await Promise.all(listTables.map(table => 
+      limit(async () => {
+        console.log(`Get references and referencieds tables for`, table.TABNAME);
+
+        const [references, referencieds] = await Promise.all([
+          DB2.getTableReferences(schema, table.TABNAME),
+          DB2.getTableReferencieds(schema, table.TABNAME)
+        ]);
+
+        return { table: table.TABNAME, references: references, referencieds: referencieds };
+      })
+    ));
+    
+    return res.json(tabelas);
+  } catch (error) {
+    res.send({
+      message: "Erro ao buscar as tabelas do db2 no schema",
+      error: error.message
+    })
+  }
+})
+
+app.get('/searchSchemas/', (req,res) => {
+  const schemas = DB2.getSchemas();
+
+
+  res.json(schemas);
+})
+
+app.post('/migrate', async (req, res) => {
+  try{
+    console.log('body trasnfer: ', req.body);
+    const {srcConn, srcSchema, destConn, 
+      destSchema, arrTables, migrateData} = req.body;
+    
+    if(srcConn == 'db2' && (destConn == 'mariadb' || destConn == 'mysql')){
+      await migrateTables({
+        srcConn: DB2, srcSchema, 
+        srcName: srcConn, destConn: Mariadb, 
+        destSchema, destName: destConn, arrTables, migrateData});
+      return res.send('tabelas migradas com sucesso');
+    }
+    if(srcConn == 'mariadb' || srcConn == 'mysql' && destConn == 'db2'){
+      await migrateTables({
+        srcConn: Mariadb, srcSchema, srcName: srcConn, 
+        destConn: DB2, destSchema, arrTables, migrateData});
+      return res.send('tabelas migradas com sucesso');
+    } 
+  }catch(e){
+    return res.status(500).send({error: e});
   }
 
-  return res.json(tabelas);
-})
 
-app.get('/searchSchemas', (req,res) => {
-  const schema = req.body.schema
-})
 
-app.get('/transfer', async (req, res) => {
-  const tableColumns = await db2.getTables(db2Connection);
 })
 
 app.get('/db2-schema', async(req,res) => {
@@ -124,7 +167,6 @@ app.get('/db2-schema', async(req,res) => {
     res.send('Erro ao buscar os schemas: ', error);
   }
 })
-
 
 app.listen(port, ()=> console.log('app listening on port ', port));
 

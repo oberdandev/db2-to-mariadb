@@ -1,6 +1,72 @@
-import mariadb from 'mariadb';
+  import mariadb from 'mariadb';
+  import mysql from 'mysql'
 
-export let mariadbConn;
+  export class DatabaseMariadb {
+    constructor(config) {
+      this.config = config || {host: '', user: '', password: '', database: '', port: ''};
+    }
+
+    getconfig() {
+      return this.config;
+    }
+
+    setConfig(config) {
+      console.log('mariadb.js - 14: setando configurações para a database Mariadb');
+      this.config = config;
+    }
+
+    async testConnection() {
+      if (!this.config) {
+        throw new Error("Database configuration not set");
+      }
+
+      let connection;
+      try {
+        connection = await mysql.createConnection(this.config);
+        console.log(connection);
+        await connection.ping(); // Verifica se a conexão está ativa
+        return "Connection successful!";
+      } catch (err) {
+        throw new Error("Connection failed: " + err.message);
+      } finally {
+        if (connection) connection.end();
+      }
+    }
+
+    async query(sql, params = []) {
+      if (!this.config) {
+        throw new Error("Configuração não definida para o banco de dados mariadb.");
+      }
+
+      let connection;
+      try {
+        connection = await mysql.createConnection(this.config);
+        const result = await connection.query(sql, params);
+        return result;
+      } catch (err) {
+        throw err;
+      } finally {
+        if (connection) connection.end();
+      }
+    }
+    
+    async getTables() {
+      if (!this.config) {
+        throw new Error("Configuração não definida para o banco de dados mariadb.");
+      }
+
+      let connection;
+      try {
+        connection = await mysql.createConnection(this.config);
+        const result = await connection.query('SHOW TABLES');
+        return result;
+      } catch (err) {
+        throw err;
+      } finally {
+        if (connection) connection.end();
+      }
+    }
+}
 
 export const maria = {
   testConnection: async (connectionParams) => {
@@ -11,7 +77,7 @@ export const maria = {
       user,
       password,
       database,
-      connectionLimit: 10
+      connectionLimit: 1
     })
 
     let mariadbConn;
@@ -22,9 +88,7 @@ export const maria = {
     } catch (err) {
       console.error("Erro na conexão:", err);
       return false;
-    } finally {
-      if (mariadbConn) mariadbConn.release();
-    }
+    } 
   },
   connection: async (connectionParams) => {
     try{
@@ -40,60 +104,13 @@ export const maria = {
     }
   },
   setConnection: async(connectionParams) => {
-    const pool = mariadb.createPool({
+    const pool = mariadb.createConnection({
       ...connectionParams,
-      connectionLimit: 10
+      connectionLimit: 1
     })
-    let mariadbConn = await pool.getConnection();
-    return mariadbConn;
+    
+    return pool;
   }
 
 }
 
-
-async function tryConnectionMariaDB(database, host, user, password){
-  const pool = mariadb.createPool({
-    host,
-    user,
-    password,
-    database,
-    connectionLimit: 10
-  })
-
-  let mariadbConn;
-
-  try {
-    mariadbConn = await pool.getConnection();
-    console.log("Conexão bem-sucedida!");
-    return mariadbConn;
-  } catch (err) {
-    console.error("Erro na conexão:", err);
-  } finally {
-    if (mariadbConn) mariadbConn.release();
-  }
-}
-
-async function createTablesOnMariaDB(connection, tableColumns) {
-  let queryScript;
-
-}
-
-function mariadbConnection (connectionParamaters) {
-  try{
-    const pool = mariadb.createPool({
-      ...connectionParamaters,
-      connectionLimit: 10
-    })
-    let mariadbConn = pool.getConnection();
-    return mariadbConn;
-  }catch(e){
-    console.log(e)
-    return null;
-  }
-}
-
-
-export {
-  tryConnectionMariaDB, 
-  createTablesOnMariaDB
-}
