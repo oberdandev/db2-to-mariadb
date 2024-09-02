@@ -7,8 +7,7 @@ const translateDataType = (type, length) => {
 
 export async function migrateTables({srcConn, srcSchema, srcName, destConn, destSchema, destName, arrTables, migrateData}){
   console.log({srcSchema, srcName, destSchema, destName, arrTables, migrateData});
-  let stackInfo = [];
-  let stackSucess = [];
+  
   try{
     let sqlQueries = []
     const tables = await srcConn.getTables(srcSchema);
@@ -68,14 +67,15 @@ export async function migrateTables({srcConn, srcSchema, srcName, destConn, dest
       }
     })));
 
-   if(migrateData){
+  if(migrateData){
+      destConn.query(`CREATE DATABASE IF NOT EXISTS ${destSchema}`);
       const limit2 = pLimit(3)
       await Promise.all(
         arrTables.map(tableName =>
           limit2(async () => {
             const data = await srcConn.getTableData(tableName, srcSchema);
             const dataColumns = tables[tableName].map(column => column.COLNAME);
-            const insertQuery = `INSERT INTO ${tableName} (${dataColumns.join(',')})
+            const insertQuery = `INSERT INTO ${destSchema}.${tableName} (${dataColumns.join(',')})
               VALUES (${dataColumns.map(() => '?').join(',')})`;
     
             await Promise.all(
@@ -90,7 +90,20 @@ export async function migrateTables({srcConn, srcSchema, srcName, destConn, dest
         )
       );   
     } 
+
+    /* for(const table of arrTables){
+      console.log(table)
+      const primaryKeys = await srcConn.getPrimaryKeys(srcSchema, table);
+      const foreignKeys = await srcConn.getForeignKeys(srcSchema, table);
+      console.log(primaryKeys)
+      console.log(foreignKeys)
+
+    } */
+
     
+
+    
+
   }catch(e){
     console.trace(e)
     return {error: e};

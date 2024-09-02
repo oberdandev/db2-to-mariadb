@@ -9,7 +9,15 @@ const query = {
   getColumnsByTable: (schema, table) => `SELECT COLNAME, TYPENAME, LENGTH, COLNO,  "SCALE", "DEFAULT", "NULLS" FROM SYSCAT.COLUMNS WHERE TABSCHEMA = upper('${schema}') AND TABNAME = upper('${table}') ORDER BY COLNO`,
 
   getColumnsPrimaryKey: (schema, table) => `SELECT COLNAME FROM SYSCAT.COLUMNS WHERE TABSCHEMA = upper('${schema}') AND TABNAME = upper('${table}') AND KEYSEQ = 1`,
-  getColumnsForeignKey: (schema, table) => `SELECT COLNAME, TABNAME, CONSTNAME FROM SYSCAT.REFERENCES WHERE TABSCHEMA = upper('${schema}') AND TABNAME = upper('${table}')`,
+  getColumnsForeignKey: (schema, table) => `SELECT k.COLNAME AS "NOME DA COLUNA",
+       r.TABNAME AS "TABELA",
+       r.REFTABNAME,
+        FROM SYSCAT.REFERENCES r
+        JOIN SYSCAT.KEYCOLUSE k
+        ON r.CONSTNAME = k.CONSTNAME
+        AND r.TABSCHEMA = k.TABSCHEMA
+      WHERE r.TABSCHEMA = UPPER('${schema}')
+      AND r.TABNAME = UPPER('');`,
   
   
   getColumnsCheck: (schema, table) => `SELECT COLNAME, TEXT FROM SYSCAT.CHECKS WHERE TABSCHEMA = upper('${schema}') AND TABNAME = upper('${table}')`,
@@ -147,16 +155,16 @@ export class DatabaseDB2 {
       const response = await this.query(query.getColumnsPrimaryKey(schema, table));
       return response;
     }catch(e){
-      console.log(e)
+      console.log('GetPrimaryKey:', e)
     }
   }
 
-  async getForeignKeys(table, column){
+  async getForeignKeys(schema, table){
     try{
       const response = await this.query(query.getColumnsForeignKey(schema, table));
       return response;
     }catch(e){
-      console.log(e)
+      console.log('GetForeignKeys', e)
     }
   }
 
