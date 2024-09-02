@@ -7,14 +7,18 @@ const translateDataType = (type, length) => {
 
 export async function migrateTables({srcConn, srcSchema, srcName, destConn, destSchema, destName, arrTables, migrateData}){
   console.log({srcSchema, srcName, destSchema, destName, arrTables, migrateData});
-  
   try{
+    if(destName == 'mariadb')
+      await destConn.query(`CREATE DATABASE IF NOT EXISTS ${destSchema}`);
+    else
+      await destConn.query(`CREATE SCHEMA IF NOT EXISTS ${destSchema}`);
+
     let sqlQueries = []
     const tables = await srcConn.getTables(srcSchema);
 
     for(const tableName of arrTables){
       let columns = tables[tableName];
-      let sql = `CREATE TABLE IF NOT EXISTS ${tableName} (\n`;
+      let sql = `CREATE TABLE IF NOT EXISTS ${destSchema}.${tableName} (\n`;
       columns.forEach((column, index) => {
         let columnDefinition = ` ${column.COLNAME} `;
         switch (column.TYPENAME) {
@@ -68,7 +72,6 @@ export async function migrateTables({srcConn, srcSchema, srcName, destConn, dest
     })));
 
   if(migrateData){
-      destConn.query(`CREATE DATABASE IF NOT EXISTS ${destSchema}`);
       const limit2 = pLimit(3)
       await Promise.all(
         arrTables.map(tableName =>
