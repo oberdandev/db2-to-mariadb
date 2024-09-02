@@ -171,6 +171,7 @@ app.get('/db2-schema', async(req,res) => {
 app.get('/mariadb-schema'), async(req,res) => {
   try{
     const response = await Mariadb.getSchemas()
+    return res.send(response);
   }catch(e){
     res.status(500).send('Erro ao buscar os schemas: ', error)
   }
