@@ -48,7 +48,7 @@
 
     async query(sql, params = []) {
       if (!this.config) {
-        throw new Error("Configuração não definida para o banco de dados mariadb.");
+       return '';
       }
 
       let connection;
@@ -57,7 +57,7 @@
         const result = await connection.query(sql, params);
         return result;
       } catch (err) {
-        throw err;
+        console.log(err);
       } finally {
         if (connection) connection.end();
       }
@@ -74,7 +74,7 @@
         const result = await connection.query('SHOW TABLES');
         return result;
       } catch (err) {
-        throw err;
+        console.log(err)
       } finally {
         if (connection) connection.end();
       }

@@ -103,9 +103,6 @@ export async function migrateTables({srcConn, srcSchema, srcName, destConn, dest
 
     } */
 
-    
-
-    
 
   }catch(e){
     console.trace(e)

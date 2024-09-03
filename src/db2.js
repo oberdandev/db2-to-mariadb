@@ -78,7 +78,7 @@ export class DatabaseDB2 {
 
       return result;
     } catch (err) {
-      throw err;
+      console.log(err)
     } finally {
       if (connection) connection.close();
     }
@@ -89,7 +89,7 @@ export class DatabaseDB2 {
       const res = await this.query(query.getTablesName(schema));
       return res;
     } catch (error) {
-      throw new Error('Could not get tables: ' + error.message);
+      console.log(error)
     }
   }
 
@@ -114,7 +114,7 @@ export class DatabaseDB2 {
 
       return tableObj;
     }catch(e){
-      throw new Error('Could not get tables: ' + e.message);
+      console.log('getTables: ', e)
     }
   }
 
@@ -124,7 +124,7 @@ export class DatabaseDB2 {
       const data = await this.query(q);
       return data;
     } catch (error) {
-      throw new Error(`Não foi possível pegar os dados da tabela: ${table} no schema: ${schema}` + error.message);
+      console.log(`Não foi possível pegar os dados da tabela: ${table} no schema: ${schema}` + error.message);
     }
   }
   
@@ -135,7 +135,7 @@ export class DatabaseDB2 {
       const referencieds = await this.query(qReferencieds);
       return referencieds;  
     } catch (error) {
-      return {error: error.message}
+      console.log(error);
     }
   }
 
@@ -146,7 +146,7 @@ export class DatabaseDB2 {
 
       return references;
     } catch (e) {
-      return {error: e.message}
+      console.log('getTableReferences: ', e)
     }
   }
 
@@ -186,7 +186,7 @@ export const db2 = {
       });
     });
    } catch (error) {
-    return new Promise((resolve, reject) => reject(error));
+    console.log(error);
    }
     
   },
@@ -242,7 +242,6 @@ export const db2 = {
       return schema;
     } catch (error) {
       console.log('errro ao buscar schemas do db2: ', error)
-      return {error: error.message}
     }
   },
   getColumnsPrimaryKey: async(connection, schema, table) => {},
@@ -261,7 +260,7 @@ export const db2 = {
       const q = await connection.query(`SELECT * FROM ${schema}.${table}`);
       return q;
     } catch (error) {
-      return {error: error.message}
+      console.log('getTableContent:', error)
     }
   },
   getTableReferencieds: async(connection, schema, table) => {
@@ -271,7 +270,7 @@ export const db2 = {
       const referencieds = await connection.query(qReferencieds);
       return referencieds;  
     } catch (error) {
-      return {error: error.message}
+      console.log('GetTableReferencieds: ', error)
     }
   }
 };
